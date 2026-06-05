@@ -1,0 +1,82 @@
+description: "Go REST Service"
+authors: ["Jimmie Fulton <jimmie@ybor.ai>"]
+languages: ["Go"]
+frameworks: ["net/http", "chi"]
+tags: ["rest", "service", "go"]
+
+requires:
+  archetect: "3.0.0"
+
+templating:
+  trim_blocks: true
+  lstrip_blocks: true
+
+catalog:
+  author:
+    source: "../../../personal/archetect-common/author-prompts-library"
+    library: true
+    show: false
+  org:
+    source: "../../../personal/archetect-common/org-prompts-library"
+    library: true
+    show: false
+  project:
+    source: "../../../personal/archetect-common/project-prompts-library"
+    library: true
+    show: false
+  editor-config:
+    source: "../../../personal/archetect-common/editor-config-library"
+    library: true
+    show: false
+  gitignore:
+    source: "../../../personal/archetect-common/gitignore-library"
+    library: true
+    show: false
+  scm:
+    source: "../../../personal/archetect-common/scm-library"
+    library: true
+    show: false
+  ports:
+    source: "../../../personal/archetect-common/ports-library"
+    library: true
+    show: false
+  archiver:
+    source: "../../../personal/archetect-common/archive-library"
+    library: true
+    show: false
+  platform-application-manifests:
+    source: "../platform-application-manifests-library"
+    library: true
+    show: false
+  golang-ci:
+    source: "../golang-ci-library"
+    library: true
+    show: false
+  golang-resource-postgresql:
+    source: "../golang-resource-postgresql-library"
+    library: true
+    show: false
+  golang-resource-mysql:
+    source: "../golang-resource-mysql-library"
+    library: true
+    show: false
+  golang-resource-redis:
+    source: "../golang-resource-redis-library"
+    library: true
+    show: false
+  golang-resource-kafka:
+    source: "../golang-resource-kafka-library"
+    library: true
+    show: false
+  golang-resource-pulsar:
+    source: "../golang-resource-pulsar-library"
+    library: true
+    show: false
+  golang-resource-s3:
+    source: "../golang-resource-s3-library"
+    library: true
+    show: false
+  golang-resource-azure-blob:
+    source: "../golang-resource-azure-blob-library"
+    library: true
+    show: false

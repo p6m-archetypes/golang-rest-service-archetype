@@ -1,0 +1,44 @@
+# {{ project-name }} — local development
+# Usage: tilt up
+#
+# PAO reconciles the PlatformApplication into a Deployment + Service.
+# PRO provisions declared resources (PostgreSQL, Redis, etc.) and injects connection secrets.
+
+# Build the service image. The dev kustomize overlay sets image: {{ project-name }}:local
+# so Tilt replaces it here with the image it actually built.
+docker_build(
+    '{{ project-name }}:local',
+    '.',
+    dockerfile='Dockerfile',
+)
+
+# Tell Tilt where the image reference lives inside the PlatformApplication CRD.
+# Without this, Tilt skips the image build (it only scans standard k8s Deployment fields).
+k8s_image_json_path(
+    kind='PlatformApplication',
+    paths='{.spec.deployment.image}',
+)
+
+# Apply Namespace + PlatformApplication via kustomize dev overlay. The app deploys
+# into the solution-scoped namespace {{ org-solution-name }}-{{ project-name }}-dev
+# so PAO can derive its solution + environment (needed for shared resources).
+# PAO watches for the PlatformApplication and creates the Deployment + Service.
+k8s_yaml(kustomize('.platform/kubernetes/dev'))
+
+k8s_resource(
+    new_name='namespace',
+    objects=['{{ org-solution-name }}-{{ project-name }}-dev:Namespace:default'],
+    labels=['infra'],
+)
+
+# Port-forward to the Service once the app pod is actually Running.
+# PAO gates the Deployment on resource readiness, so we wait for a Ready pod
+# (not just the Service) before forwarding — otherwise port-forward attaches to a
+# Pending pod and exits, which would fail `tilt ci`.
+# {{ service_port }} — application traffic
+# {{ management_port }} — /health and /metrics
+local_resource(
+    'port-forward',
+    serve_cmd='ns={{ org-solution-name }}-{{ project-name }}-dev; until [ "$(kubectl get pods -n $ns --no-headers 2>/dev/null | grep -cE "1/1[[:space:]]+Running")" -ge 1 ]; do sleep 3; done && kubectl port-forward -n $ns svc/{{ project-name }} {{ service_port }}:{{ service_port }} {{ management_port }}:{{ management_port }}',
+    labels=['dev'],
+)
