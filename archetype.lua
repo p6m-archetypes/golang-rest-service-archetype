@@ -13,7 +13,7 @@ context:set("github_owner", context:get("org-solution-name"))
 
 context:prompt_text("Go Module Path:", "module_path", {
     default = "github.com/" .. context:get("org-solution-name") .. "/" .. context:get("project-name"),
-    help = "Go module path (e.g. github.com/p6m-acme/billing-service)",
+    help = "Go module path (e.g. github.com/" .. context:get("org-solution-name") .. "/billing-service)",
 })
 
 -- Service configuration
