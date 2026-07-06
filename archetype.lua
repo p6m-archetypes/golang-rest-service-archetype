@@ -17,7 +17,7 @@ context:prompt_text("Go Module Path:", "module_path", {
 })
 
 -- Service configuration
-require("ports").prompt(context)
+require("ports").prompt(context, { ports = { "service", "management", "debug" } })
 
 -- Resources
 context:prompt_select("Persistence:", "persistence", {
