@@ -10,4 +10,5 @@ format = "json"
 # while it incubates in this workspace — pin its git tag once published).
 [plugins]
 postgres = "prova-rs/prova-postgres@v1"
+mysql    = "prova-rs/prova-mysql@v1"
 p6m      = { path = "../prova-p6m-standards" }
