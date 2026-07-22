@@ -14,6 +14,8 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"{{ module_path }}/internal/config"
 	"{{ module_path }}/internal/handler"
+	"{{ module_path }}/internal/repository"
+	"{{ module_path }}/internal/telemetry"
 {% if has_persistence %}	"{{ module_path }}/internal/persistence"
 {% endif %}{% if has_cache %}	"{{ module_path }}/internal/cache"
 {% endif %}{% if has_messaging %}	"{{ module_path }}/internal/messaging"
@@ -36,6 +38,10 @@ func main() {
 	}
 	logger := slog.New(logHandler)
 	slog.SetDefault(logger)
+
+	// Traces: fail-open OTLP — exports iff OTEL_EXPORTER_OTLP_ENDPOINT is set
+	otelShutdown := telemetry.Init(context.Background(), "{{ project-name }}")
+	defer otelShutdown(context.Background())
 
 {% if persistence == "PostgreSQL" %}	if err := persistence.Init(cfg.DatabaseURL); err != nil {
 		slog.Error("persistence init failed", "error", err)
@@ -71,15 +77,35 @@ func main() {
 		os.Exit(1)
 	}
 {% endif %}
+	store, err := repository.New(context.Background())
+	if err != nil {
+		slog.Error("repository init failed", "error", err)
+		os.Exit(1)
+	}
+
 	srv := &http.Server{
 		Addr:    fmt.Sprintf("%s:%d", cfg.Host, cfg.Port),
-		Handler: handler.New(),
+		Handler: handler.New(store),
 	}
 
 	mgmtMux := http.NewServeMux()
 	mgmtMux.HandleFunc("/health/readiness", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		fmt.Fprintln(w, `{"status":"ok"}`)
+{% if persistence == "PostgreSQL" %}		ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
+		defer cancel()
+		if err := persistence.DB().Ping(ctx); err != nil {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			fmt.Fprintln(w, `{"status":"unavailable"}`)
+			return
+		}
+{% elseif persistence == "MySQL" %}		ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
+		defer cancel()
+		if err := persistence.DB().PingContext(ctx); err != nil {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			fmt.Fprintln(w, `{"status":"unavailable"}`)
+			return
+		}
+{% endif %}		fmt.Fprintln(w, `{"status":"ok"}`)
 	})
 	mgmtMux.HandleFunc("/health/liveness", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")

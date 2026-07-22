@@ -1,0 +1,9 @@
+# Keep host state and non-build inputs out of the image build context — the Dockerfiles COPY . .
+.git/
+.jj/
+.idea/
+.vscode/
+.platform/
+*.md
+Tiltfile
+server

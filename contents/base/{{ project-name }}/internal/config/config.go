@@ -27,9 +27,10 @@ type Config struct {
 {% endif %}}
 
 func Load() (*Config, error) {
-	port, err := strconv.Atoi(getEnv("PORT", "{{ service_port }}"))
+	// SERVER_PORT is what the platform manifests inject for HTTP transports.
+	port, err := strconv.Atoi(getEnv("SERVER_PORT", "{{ service_port }}"))
 	if err != nil {
-		return nil, fmt.Errorf("config: PORT: %w", err)
+		return nil, fmt.Errorf("config: SERVER_PORT: %w", err)
 	}
 	mgmtPort, err := strconv.Atoi(getEnv("MANAGEMENT_PORT", "{{ management_port }}"))
 	if err != nil {
@@ -87,10 +88,12 @@ func dbURL() string {
 	pass := os.Getenv("DB_PASSWORD")
 	name := os.Getenv("DB_DBNAME")
 	if host != "" && port != "" && user != "" && name != "" {
-		return fmt.Sprintf("postgresql://%s:%s@%s:%s/%s", user, pass, host, port, name)
-	}
-	return "postgresql://postgres:postgres@localhost:5432/{{ project-name }}"
-}
+{% if persistence == "PostgreSQL" %}		return fmt.Sprintf("postgresql://%s:%s@%s:%s/%s", user, pass, host, port, name)
+{% elseif persistence == "MySQL" %}		return fmt.Sprintf("%s:%s@tcp(%s:%s)/%s", user, pass, host, port, name)
+{% endif %}	}
+{% if persistence == "PostgreSQL" %}	return "postgresql://postgres:postgres@localhost:5432/{{ project-name }}"
+{% elseif persistence == "MySQL" %}	return "root:root@tcp(localhost:3306)/{{ project-name }}"
+{% endif %}}
 {% endif %}{% if has_cache %}// redisURL returns REDIS_URL if set, otherwise assembles it from the individual
 // CACHE_HOST/PORT/PASSWORD env vars that PAO injects from the connection secret.
 func redisURL() string {
