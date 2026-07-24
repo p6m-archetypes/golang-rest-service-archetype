@@ -75,3 +75,33 @@ for _, n in ipairs(VARIANTS) do
 		p6m.standards.runtime(g, sut)
 	end)
 end
+
+-- CI parity (S10): the rendered project's own Build workflow path — the community-action inline
+-- steps (go build/test) on a fresh clone, in the toolchain image. The Dockerfile and CI are two
+-- independent build paths; S10 holds the second. One hollow render suffices: resource variants
+-- change dependencies, not the command path.
+local ci_project = prova.fixture("standards[golang-rest/None]:project", Scope.File, function(ctx)
+	return archetect.render{
+		source = SRC,
+		answers = {
+			author_name = "Test Author",
+			author_email = "test@example.com",
+			org_name = "acme",
+			solution_name = "platform",
+			prefix_name = "Example",
+			suffix_name = "Service",
+			image_registry = "ghcr.io/acme",
+			persistence = "None",
+		},
+		destination = ctx:tempdir(),
+		defaults = true,
+	}
+end)
+
+prova.group("golang-rest[None]:ci", { requires = { "docker" }, tags = { "standards" } }, function(g)
+	p6m.standards.ci_parity(g, ci_project, {
+		stack = "golang",
+		project_dir = "example-service",
+		name = "golang-rest",
+	})
+end)
