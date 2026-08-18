@@ -8,10 +8,18 @@ local context = Context.new()
 local identity = require("p6m-identity")
 identity.prompt(context)
 
+-- Asked OPTIONAL and derived after: a default computed from earlier answers cannot be known
+-- until they are given, so an interface probe resolves it against a placeholder and ships that
+-- to every client. The help states the derivation instead of interpolating a value into it.
 context:prompt_text("Go Module Path:", "module_path", {
-    default = "github.com/" .. context:get("solution-name") .. "/" .. context:get("project-name"),
-    help = "Go module path (e.g. github.com/" .. context:get("solution-name") .. "/billing-service)",
+    optional    = true,
+    placeholder = "github.com/acme-payments/billing-service",
+    help        = "Go module path. Leave blank to use github.com/{solution}/{project}.",
 })
+if context:get("module_path") == nil or context:get("module_path") == "" then
+    context:set("module_path",
+        "github.com/" .. context:get("solution-name") .. "/" .. context:get("project-name"))
+end
 
 -- Service configuration
 -- `debug` is not asked: nothing any archetype renders reads `debug_port` (measured
