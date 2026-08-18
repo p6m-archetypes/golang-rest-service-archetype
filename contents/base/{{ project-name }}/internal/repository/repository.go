@@ -1,4 +1,4 @@
-// Package repository persists the service's entity, {{ PrefixName }} — the same five CRUD
+// Package repository persists the service's entity, {{ EntityName }} — the same five CRUD
 // operations every p6m service transport serves over `{ id, display_name }`.
 package repository
 
@@ -33,14 +33,14 @@ import (
 )
 {% endif %}
 
-// {{ PrefixName }} is the entity this service serves.
-type {{ PrefixName }} struct {
+// {{ EntityName }} is the entity this service serves.
+type {{ EntityName }} struct {
 	ID          string
 	DisplayName string
 }
 
-// ErrNotFound reports an id no stored {{ PrefixName }} backs.
-var ErrNotFound = errors.New("{{ prefix-name }} not found")
+// ErrNotFound reports an id no stored {{ EntityName }} backs.
+var ErrNotFound = errors.New("{{ entity-name }} not found")
 
 // newID mints a random UUIDv4 without an external dependency.
 func newID() string {
@@ -54,13 +54,13 @@ func newID() string {
 }
 
 {% if persistence == "PostgreSQL" %}
-// Store persists {{ PrefixName }}s in PostgreSQL through the shared connection pool.
+// Store persists {{ EntityName }}s in PostgreSQL through the shared connection pool.
 type Store struct{}
 
 // New ensures the backing table exists and returns the store.
 func New(ctx context.Context) (*Store, error) {
 	_, err := persistence.DB().Exec(ctx, `
-		CREATE TABLE IF NOT EXISTS {{ prefix_name }}s (
+		CREATE TABLE IF NOT EXISTS {{ entity_name }}s (
 			id           TEXT PRIMARY KEY,
 			display_name TEXT NOT NULL
 		)`)
@@ -70,33 +70,33 @@ func New(ctx context.Context) (*Store, error) {
 	return &Store{}, nil
 }
 
-func (s *Store) Create(ctx context.Context, displayName string) ({{ PrefixName }}, error) {
-	e := {{ PrefixName }}{ID: newID(), DisplayName: displayName}
+func (s *Store) Create(ctx context.Context, displayName string) ({{ EntityName }}, error) {
+	e := {{ EntityName }}{ID: newID(), DisplayName: displayName}
 	_, err := persistence.DB().Exec(ctx,
-		`INSERT INTO {{ prefix_name }}s (id, display_name) VALUES ($1, $2)`, e.ID, e.DisplayName)
+		`INSERT INTO {{ entity_name }}s (id, display_name) VALUES ($1, $2)`, e.ID, e.DisplayName)
 	return e, err
 }
 
-func (s *Store) Get(ctx context.Context, id string) ({{ PrefixName }}, error) {
-	var e {{ PrefixName }}
+func (s *Store) Get(ctx context.Context, id string) ({{ EntityName }}, error) {
+	var e {{ EntityName }}
 	err := persistence.DB().QueryRow(ctx,
-		`SELECT id, display_name FROM {{ prefix_name }}s WHERE id = $1`, id).Scan(&e.ID, &e.DisplayName)
+		`SELECT id, display_name FROM {{ entity_name }}s WHERE id = $1`, id).Scan(&e.ID, &e.DisplayName)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return e, ErrNotFound
 	}
 	return e, err
 }
 
-func (s *Store) List(ctx context.Context) ([]{{ PrefixName }}, error) {
+func (s *Store) List(ctx context.Context) ([]{{ EntityName }}, error) {
 	rows, err := persistence.DB().Query(ctx,
-		`SELECT id, display_name FROM {{ prefix_name }}s ORDER BY id`)
+		`SELECT id, display_name FROM {{ entity_name }}s ORDER BY id`)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []{{ PrefixName }}{}
+	items := []{{ EntityName }}{}
 	for rows.Next() {
-		var e {{ PrefixName }}
+		var e {{ EntityName }}
 		if err := rows.Scan(&e.ID, &e.DisplayName); err != nil {
 			return nil, err
 		}
@@ -105,21 +105,21 @@ func (s *Store) List(ctx context.Context) ([]{{ PrefixName }}, error) {
 	return items, rows.Err()
 }
 
-func (s *Store) Update(ctx context.Context, id, displayName string) ({{ PrefixName }}, error) {
+func (s *Store) Update(ctx context.Context, id, displayName string) ({{ EntityName }}, error) {
 	tag, err := persistence.DB().Exec(ctx,
-		`UPDATE {{ prefix_name }}s SET display_name = $2 WHERE id = $1`, id, displayName)
+		`UPDATE {{ entity_name }}s SET display_name = $2 WHERE id = $1`, id, displayName)
 	if err != nil {
-		return {{ PrefixName }}{}, err
+		return {{ EntityName }}{}, err
 	}
 	if tag.RowsAffected() == 0 {
-		return {{ PrefixName }}{}, ErrNotFound
+		return {{ EntityName }}{}, ErrNotFound
 	}
-	return {{ PrefixName }}{ID: id, DisplayName: displayName}, nil
+	return {{ EntityName }}{ID: id, DisplayName: displayName}, nil
 }
 
 func (s *Store) Delete(ctx context.Context, id string) error {
 	tag, err := persistence.DB().Exec(ctx,
-		`DELETE FROM {{ prefix_name }}s WHERE id = $1`, id)
+		`DELETE FROM {{ entity_name }}s WHERE id = $1`, id)
 	if err != nil {
 		return err
 	}
@@ -129,13 +129,13 @@ func (s *Store) Delete(ctx context.Context, id string) error {
 	return nil
 }
 {% elseif persistence == "MySQL" %}
-// Store persists {{ PrefixName }}s in MySQL through the shared connection.
+// Store persists {{ EntityName }}s in MySQL through the shared connection.
 type Store struct{}
 
 // New ensures the backing table exists and returns the store.
 func New(ctx context.Context) (*Store, error) {
 	_, err := persistence.DB().ExecContext(ctx, `
-		CREATE TABLE IF NOT EXISTS {{ prefix_name }}s (
+		CREATE TABLE IF NOT EXISTS {{ entity_name }}s (
 			id           VARCHAR(36) PRIMARY KEY,
 			display_name VARCHAR(255) NOT NULL
 		)`)
@@ -145,33 +145,33 @@ func New(ctx context.Context) (*Store, error) {
 	return &Store{}, nil
 }
 
-func (s *Store) Create(ctx context.Context, displayName string) ({{ PrefixName }}, error) {
-	e := {{ PrefixName }}{ID: newID(), DisplayName: displayName}
+func (s *Store) Create(ctx context.Context, displayName string) ({{ EntityName }}, error) {
+	e := {{ EntityName }}{ID: newID(), DisplayName: displayName}
 	_, err := persistence.DB().ExecContext(ctx,
-		`INSERT INTO {{ prefix_name }}s (id, display_name) VALUES (?, ?)`, e.ID, e.DisplayName)
+		`INSERT INTO {{ entity_name }}s (id, display_name) VALUES (?, ?)`, e.ID, e.DisplayName)
 	return e, err
 }
 
-func (s *Store) Get(ctx context.Context, id string) ({{ PrefixName }}, error) {
-	var e {{ PrefixName }}
+func (s *Store) Get(ctx context.Context, id string) ({{ EntityName }}, error) {
+	var e {{ EntityName }}
 	err := persistence.DB().QueryRowContext(ctx,
-		`SELECT id, display_name FROM {{ prefix_name }}s WHERE id = ?`, id).Scan(&e.ID, &e.DisplayName)
+		`SELECT id, display_name FROM {{ entity_name }}s WHERE id = ?`, id).Scan(&e.ID, &e.DisplayName)
 	if errors.Is(err, sql.ErrNoRows) {
 		return e, ErrNotFound
 	}
 	return e, err
 }
 
-func (s *Store) List(ctx context.Context) ([]{{ PrefixName }}, error) {
+func (s *Store) List(ctx context.Context) ([]{{ EntityName }}, error) {
 	rows, err := persistence.DB().QueryContext(ctx,
-		`SELECT id, display_name FROM {{ prefix_name }}s ORDER BY id`)
+		`SELECT id, display_name FROM {{ entity_name }}s ORDER BY id`)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []{{ PrefixName }}{}
+	items := []{{ EntityName }}{}
 	for rows.Next() {
-		var e {{ PrefixName }}
+		var e {{ EntityName }}
 		if err := rows.Scan(&e.ID, &e.DisplayName); err != nil {
 			return nil, err
 		}
@@ -180,23 +180,23 @@ func (s *Store) List(ctx context.Context) ([]{{ PrefixName }}, error) {
 	return items, rows.Err()
 }
 
-func (s *Store) Update(ctx context.Context, id, displayName string) ({{ PrefixName }}, error) {
+func (s *Store) Update(ctx context.Context, id, displayName string) ({{ EntityName }}, error) {
 	res, err := persistence.DB().ExecContext(ctx,
-		`UPDATE {{ prefix_name }}s SET display_name = ? WHERE id = ?`, displayName, id)
+		`UPDATE {{ entity_name }}s SET display_name = ? WHERE id = ?`, displayName, id)
 	if err != nil {
-		return {{ PrefixName }}{}, err
+		return {{ EntityName }}{}, err
 	}
 	if n, err := res.RowsAffected(); err != nil {
-		return {{ PrefixName }}{}, err
+		return {{ EntityName }}{}, err
 	} else if n == 0 {
-		return {{ PrefixName }}{}, ErrNotFound
+		return {{ EntityName }}{}, ErrNotFound
 	}
-	return {{ PrefixName }}{ID: id, DisplayName: displayName}, nil
+	return {{ EntityName }}{ID: id, DisplayName: displayName}, nil
 }
 
 func (s *Store) Delete(ctx context.Context, id string) error {
 	res, err := persistence.DB().ExecContext(ctx,
-		`DELETE FROM {{ prefix_name }}s WHERE id = ?`, id)
+		`DELETE FROM {{ entity_name }}s WHERE id = ?`, id)
 	if err != nil {
 		return err
 	}
@@ -208,54 +208,54 @@ func (s *Store) Delete(ctx context.Context, id string) error {
 	return nil
 }
 {% else %}
-// Store keeps {{ PrefixName }}s in memory — swap in a persistence selection to back it with a
+// Store keeps {{ EntityName }}s in memory — swap in a persistence selection to back it with a
 // real database.
 type Store struct {
 	mu    sync.Mutex
-	items map[string]{{ PrefixName }}
+	items map[string]{{ EntityName }}
 	order []string
 }
 
 // New returns an empty in-memory store.
 func New(ctx context.Context) (*Store, error) {
-	return &Store{items: map[string]{{ PrefixName }}{}}, nil
+	return &Store{items: map[string]{{ EntityName }}{}}, nil
 }
 
-func (s *Store) Create(ctx context.Context, displayName string) ({{ PrefixName }}, error) {
+func (s *Store) Create(ctx context.Context, displayName string) ({{ EntityName }}, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	e := {{ PrefixName }}{ID: newID(), DisplayName: displayName}
+	e := {{ EntityName }}{ID: newID(), DisplayName: displayName}
 	s.items[e.ID] = e
 	s.order = append(s.order, e.ID)
 	return e, nil
 }
 
-func (s *Store) Get(ctx context.Context, id string) ({{ PrefixName }}, error) {
+func (s *Store) Get(ctx context.Context, id string) ({{ EntityName }}, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	e, ok := s.items[id]
 	if !ok {
-		return {{ PrefixName }}{}, ErrNotFound
+		return {{ EntityName }}{}, ErrNotFound
 	}
 	return e, nil
 }
 
-func (s *Store) List(ctx context.Context) ([]{{ PrefixName }}, error) {
+func (s *Store) List(ctx context.Context) ([]{{ EntityName }}, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	items := []{{ PrefixName }}{}
+	items := []{{ EntityName }}{}
 	for _, id := range s.order {
 		items = append(items, s.items[id])
 	}
 	return items, nil
 }
 
-func (s *Store) Update(ctx context.Context, id, displayName string) ({{ PrefixName }}, error) {
+func (s *Store) Update(ctx context.Context, id, displayName string) ({{ EntityName }}, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	e, ok := s.items[id]
 	if !ok {
-		return {{ PrefixName }}{}, ErrNotFound
+		return {{ EntityName }}{}, ErrNotFound
 	}
 	e.DisplayName = displayName
 	s.items[id] = e

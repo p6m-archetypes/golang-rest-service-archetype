@@ -68,16 +68,16 @@ func Load() (*Config, error) {
 {% if messaging == "Kafka" %}
 
 		KafkaBrokers:       getEnv("MESSAGING_BROKERS", "localhost:9092"),
-		KafkaTopic:         getEnv("MESSAGING_TOPIC", "{{ prefix_name }}-{{ suffix_name }}"),
+		KafkaTopic:         getEnv("MESSAGING_TOPIC", "{{ project-name }}"),
 		KafkaUsername:      getEnv("MESSAGING_USERNAME", ""),
 		KafkaPassword:      getEnv("MESSAGING_PASSWORD", ""),
 		KafkaSASLMechanism: getEnv("MESSAGING_SASL_MECHANISM", ""),
 {% elseif messaging == "Pulsar" %}
 
 		PulsarBrokerURL:        getEnv("MESSAGING_BROKER_URL", "pulsar://localhost:6650"),
-		PulsarTopic:            getEnv("MESSAGING_TOPIC", "{{ prefix_name }}-{{ suffix_name }}"),
+		PulsarTopic:            getEnv("MESSAGING_TOPIC", "{{ project-name }}"),
 		PulsarJWTToken:         getEnv("MESSAGING_JWT_TOKEN", ""),
-		PulsarSubscriptionName: getEnv("MESSAGING_SUBSCRIPTION_NAME", "{{ prefix_name }}-{{ suffix_name }}-sub"),
+		PulsarSubscriptionName: getEnv("MESSAGING_SUBSCRIPTION_NAME", "{{ project-name }}-sub"),
 {% endif %}
 {% if has_s3 %}
 

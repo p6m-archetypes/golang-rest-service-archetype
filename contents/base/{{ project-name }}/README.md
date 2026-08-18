@@ -4,15 +4,15 @@ A Go REST service using the chi router.
 
 ## API
 
-Full CRUD over `{{ PrefixName }}` (`{ id, displayName }`) at the p6m standard surface:
+Full CRUD over `{{ EntityName }}` (`{ id, displayName }`) at the p6m standard surface:
 
 | Method | Path | Status |
 |---|---|---|
-| POST | `/api/v1/{{ prefix-name }}s` | 201 |
-| GET | `/api/v1/{{ prefix-name }}s` | 200 |
-| GET | `/api/v1/{{ prefix-name }}s/{id}` | 200 / 404 |
-| PUT | `/api/v1/{{ prefix-name }}s/{id}` | 200 / 404 |
-| DELETE | `/api/v1/{{ prefix-name }}s/{id}` | 204 / 404 |
+| POST | `/api/v1/{{ entity-name }}s` | 201 |
+| GET | `/api/v1/{{ entity-name }}s` | 200 |
+| GET | `/api/v1/{{ entity-name }}s/{id}` | 200 / 404 |
+| PUT | `/api/v1/{{ entity-name }}s/{id}` | 200 / 404 |
+| DELETE | `/api/v1/{{ entity-name }}s/{id}` | 204 / 404 |
 
 Health (`/health/readiness`, `/health/liveness`) and Prometheus `/metrics` answer on the
 management port.

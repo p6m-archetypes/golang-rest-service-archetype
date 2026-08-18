@@ -1,5 +1,5 @@
-// Package handler serves the service's REST API: full CRUD over {{ PrefixName }} at
-// /api/v1/{{ prefix-name }}s, the p6m platform's standard surface.
+// Package handler serves the service's REST API: full CRUD over {{ EntityName }} at
+// /api/v1/{{ entity-name }}s, the p6m platform's standard surface.
 package handler
 
 import (
@@ -15,14 +15,14 @@ import (
 	"{{ module_path }}/internal/repository"
 )
 
-// {{ PrefixName }} is the wire shape of the entity.
-type {{ PrefixName }} struct {
+// {{ EntityName }} is the wire shape of the entity.
+type {{ EntityName }} struct {
 	ID          string `json:"id"`
 	DisplayName string `json:"displayName"`
 }
 
-// {{ PrefixName }}Request is the create/update payload.
-type {{ PrefixName }}Request struct {
+// {{ EntityName }}Request is the create/update payload.
+type {{ EntityName }}Request struct {
 	DisplayName string `json:"displayName"`
 }
 
@@ -38,7 +38,7 @@ func New(store *repository.Store) http.Handler {
 	r.Use(requestLogger)
 	r.Use(middleware.Recoverer)
 
-	r.Route("/api/v1/{{ prefix-name }}s", func(r chi.Router) {
+	r.Route("/api/v1/{{ entity-name }}s", func(r chi.Router) {
 		r.Post("/", h.create)
 		r.Get("/", h.list)
 		r.Get("/{id}", h.get)
@@ -65,7 +65,7 @@ func requestLogger(next http.Handler) http.Handler {
 }
 
 func (h *handler) create(w http.ResponseWriter, r *http.Request) {
-	var req {{ PrefixName }}Request
+	var req {{ EntityName }}Request
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid JSON body")
 		return
@@ -84,7 +84,7 @@ func (h *handler) list(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	out := []{{ PrefixName }}{}
+	out := []{{ EntityName }}{}
 	for _, e := range items {
 		out = append(out, toWire(e))
 	}
@@ -101,7 +101,7 @@ func (h *handler) get(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *handler) update(w http.ResponseWriter, r *http.Request) {
-	var req {{ PrefixName }}Request
+	var req {{ EntityName }}Request
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid JSON body")
 		return
@@ -122,8 +122,8 @@ func (h *handler) delete(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func toWire(e repository.{{ PrefixName }}) {{ PrefixName }} {
-	return {{ PrefixName }}{ID: e.ID, DisplayName: e.DisplayName}
+func toWire(e repository.{{ EntityName }}) {{ EntityName }} {
+	return {{ EntityName }}{ID: e.ID, DisplayName: e.DisplayName}
 }
 
 func writeJSON(w http.ResponseWriter, status int, v any) {
