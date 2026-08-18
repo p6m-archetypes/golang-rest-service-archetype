@@ -3,7 +3,7 @@ prova = ">= 0.16"
 
 # Prova acceptance tests: `prova` from the repo root runs the whole suite.
 [run]
-proofs = ["tests"]
+proofs = ["proofs"]
 
 # CI runs the same suite; capability gating (docker) handles what a runner lacks.
 [profiles.ci]
