@@ -1,63 +1,91 @@
 local context = Context.new()
 
--- Identity (S1). One library, one implementation: p6m-identity asks for the project name and
--- the solution slug, plus the sample CRUD entity defaulted off the project name.
--- It replaces the author x org x project composition — nothing rendered here read the author, and
--- org_name x solution_name were two prompts building one string. `repo_name` and `github_owner`
--- are derived inside the library, never asked.
+-- The prompt surface is laid out in PAGES and SECTIONS. These carry the author's grouping intent —
+-- the one thing a derived interface cannot infer from the script — to every renderer: a wizard step
+-- in Ybor Studio, a titled heading in the terminal, a block comment in an answers template.
+--
+-- Built for the HYBRID drive: a client describes with the answers it has, renders the first page
+-- that still has children, collects them, and describes again. Two consequences shape what is
+-- written here:
+--
+--   * Keys are PINNED, never derived from a title, because a wizard routes on them and pages
+--     appear and disappear between rounds. Titles are display text; keys are identity.
+--   * A prompt that depends on an earlier answer sits in the SAME page as what it depends on
+--     (Messaging Access under Messaging, repository details under Source Control). The page comes
+--     back with new fields and the client stays on that step — progressive disclosure, rather than
+--     a step that vanishes and reappears elsewhere.
+--
+-- The vocabulary is the fleet's, not this archetype's: every p6m archetype uses the same page and
+-- section keys, so a form reads identically whatever the language or shape. An archetype omits a
+-- section it has no prompts for; it does not invent one.
 local identity = require("p6m-identity")
-identity.prompt(context)
 
--- Asked OPTIONAL and derived after: a default computed from earlier answers cannot be known
--- until they are given, so an interface probe resolves it against a placeholder and ships that
--- to every client. The help states the derivation instead of interpolating a value into it.
-context:prompt_text("Go Module Path:", "module_path", {
-    optional    = true,
-    placeholder = "github.com/acme-payments/billing-service",
-    help        = "Go module path. Leave blank to use github.com/{solution}/{project}.",
-})
-if context:get("module_path") == nil or context:get("module_path") == "" then
-    context:set("module_path",
-        "github.com/" .. context:get("solution-name") .. "/" .. context:get("project-name"))
-end
+context:page({ title = "Project", key = "project",
+               help = "What this service is called, and the domain it models." }, function(ctx)
+    identity.prompt_project(ctx)
 
--- Service configuration
--- The image registry, asked here rather than by `platform.prompt()` below. It is a deployment
--- fact that belongs beside the solution slug; the manifests library runs last (it needs the
--- resource selections), so leaving it to that call puts the registry dead last in the derived
--- interface — after Source Control — which is exactly where a form should not put it. The library
--- still owns the prompt; `platform.prompt()` finds it answered and skips it.
-require("platform-application-manifests").prompt_registry(context)
+    -- The deployment coordinates, grouped deliberately: this is exactly the set Ybor Studio
+    -- supplies per solution, so hiding them later is "this section came back empty" rather than a
+    -- re-grouping exercise.
+    ctx:section({ title = "Platform", key = "platform",
+                  help = "Where this service deploys and publishes." }, function(ctx)
+        identity.prompt_solution(ctx)
 
--- `debug` is not asked: nothing any archetype renders reads `debug_port` (measured
--- fleet-wide 2026-08-18) — a prompt whose answer nothing consumes cannot justify itself
--- (S1b / E2). Re-add it here if a Dockerfile or manifest ever publishes the port.
-require("ports").prompt(context, { ports = { "service", "management" } })
+        -- The registry is asked here rather than by `platform.prompt()` below: the manifests
+        -- library runs last (it needs the resource selections), which would put the registry dead
+        -- last in the derived interface. The library still owns the prompt definition.
+        require("platform-application-manifests").prompt_registry(ctx)
 
--- Resources
-context:prompt_select("Persistence:", "persistence", {
-    "None", "PostgreSQL", "MySQL",
-}, { default = "None" })
+        -- Asked OPTIONAL and derived after: an envelope computed from earlier answers cannot be
+        -- known until they are given, so a probe would resolve it against a placeholder.
+        ctx:prompt_text("Go Module Path:", "module_path", {
+            optional    = true,
+            placeholder = "github.com/acme-payments/billing-service",
+            help        = "Go module path. Leave blank to use github.com/{solution}/{project}.",
+        })
+        if ctx:get("module_path") == nil or ctx:get("module_path") == "" then
+            ctx:set("module_path",
+                "github.com/" .. ctx:get("solution-name") .. "/" .. ctx:get("project-name"))
+        end
+    end)
 
-context:prompt_select("Cache:", "cache", {
-    "None", "Redis",
-}, { default = "None" })
+    ctx:section({ title = "Service", key = "service",
+                  help = "The ports this service listens on." }, function(ctx)
+        -- `debug` is not asked: nothing this archetype renders reads `debug_port` (S1b / E2).
+        require("ports").prompt(ctx, { ports = { "service", "management" } })
+    end)
+end)
 
-context:prompt_select("Messaging:", "messaging", {
-    "None", "Kafka", "Pulsar",
-}, { default = "None" })
+context:page({ title = "Resources", key = "resources",
+               help = "Platform-provisioned backing services. The platform provisions each one and "
+                   .. "injects its connection settings; no credentials are asked for here." }, function(ctx)
+    ctx:section({ title = "Persistence", key = "persistence" }, function(ctx)
+        ctx:prompt_select("Persistence:", "persistence", { "None", "PostgreSQL", "MySQL" },
+            { default = "None" })
+    end)
 
-if context:get("messaging") ~= "None" then
-    context:prompt_select("Messaging Access:", "messaging_access", {
-        "produce", "consume",
-    }, { default = "produce" })
-else
-    context:set("messaging_access", "produce")
-end
+    ctx:section({ title = "Cache", key = "cache" }, function(ctx)
+        ctx:prompt_select("Cache:", "cache", { "None", "Redis" }, { default = "None" })
+    end)
 
-context:prompt_multiselect("Object Storage:", "object_storage", {
-    "S3", "Azure Blob",
-}, { default = {} })
+    ctx:section({ title = "Messaging", key = "messaging" }, function(ctx)
+        ctx:prompt_select("Messaging:", "messaging", { "None", "Kafka", "Pulsar" },
+            { default = "None" })
+        -- Intra-page dependency, deliberately: choosing a broker brings this page back with one
+        -- more field rather than sending the client to a different step.
+        if ctx:get("messaging") ~= "None" then
+            ctx:prompt_select("Messaging Access:", "messaging_access", { "produce", "consume" },
+                { default = "produce" })
+        else
+            ctx:set("messaging_access", "produce")
+        end
+    end)
+
+    ctx:section({ title = "Object Storage", key = "object_storage" }, function(ctx)
+        ctx:prompt_multiselect("Object Storage:", "object_storage", { "S3", "Azure Blob" },
+            { default = {} })
+    end)
+end)
 
 context:set("has_persistence", context:get("persistence") ~= "None")
 context:set("has_cache",       context:get("cache")       ~= "None")
@@ -77,9 +105,13 @@ gitignore.prompt(context, {
     ignores = { "Go", "Claude", "IDEA", "VSCode", "macOS" },
 })
 
--- SCM (opt-in: default = None)
+-- SCM — its own page: publishing is a decision about delivery, not about the service. The
+-- repository details it reveals are intra-page, so choosing a provider keeps the client here.
 local scm = require("scm")
-scm.prompt(context)
+context:page({ title = "Source Control", key = "source_control",
+               help = "Optionally create and publish the repository." }, function(ctx)
+    scm.prompt(ctx)
+end)
 
 if archetype.switches.is_enabled("debug-context") then
     log.info(archetype.description .. " Context:")
