@@ -68,6 +68,9 @@ local archetype_spec = p6m.spec{
 
 prova.group("golang-rest: the archetype itself", function(g)
   p6m.standards.prompt_surface(g, archetype_spec, { resources = { "golang-resource-postgresql", "golang-resource-mysql", "golang-resource-redis", "golang-resource-kafka", "golang-resource-pulsar", "golang-resource-s3", "golang-resource-azure-blob" } })
+
+  -- S1c: the fleet's layout vocabulary, declared and pinned.
+  p6m.standards.layout(g, "full")
 end)
 
 -- CI parity (S10): the rendered project's own build workflow path on a fresh clone, in the
