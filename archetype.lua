@@ -41,7 +41,7 @@ context:page({ title = "Project", key = "project",
         ctx:prompt_text("Go Module Path:", "module_path", {
             optional    = true,
             placeholder = "github.com/acme-payments/billing-service",
-            help        = "Go module path. Leave blank to use github.com/{solution}/{project}.",
+            help        = "Go module path. Leave blank to use github.com/{organization}/{project}.",
         })
         if ctx:get("module_path") == nil or ctx:get("module_path") == "" then
             ctx:set("module_path",
