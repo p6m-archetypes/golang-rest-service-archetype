@@ -20,14 +20,14 @@ k8s_image_json_path(
 )
 
 # Apply Namespace + PlatformApplication via kustomize dev overlay. The app deploys
-# into the solution-scoped namespace {{ org-solution-name }}-{{ project-name }}-dev
-# so PAO can derive its solution + environment (needed for shared resources).
+# into the organization-scoped namespace {{ organization-name }}-{{ project-name }}-dev
+# so PAO can derive its organization + environment (needed for shared resources).
 # PAO watches for the PlatformApplication and creates the Deployment + Service.
 k8s_yaml(kustomize('.platform/kubernetes/dev'))
 
 k8s_resource(
     new_name='namespace',
-    objects=['{{ org-solution-name }}-{{ project-name }}-dev:Namespace:default'],
+    objects=['{{ organization-name }}-{{ project-name }}-dev:Namespace:default'],
     labels=['infra'],
 )
 
@@ -39,6 +39,6 @@ k8s_resource(
 # {{ management_port }} — /health and /metrics
 local_resource(
     'port-forward',
-    serve_cmd='ns={{ org-solution-name }}-{{ project-name }}-dev; until [ "$(kubectl get pods -n $ns --no-headers 2>/dev/null | grep -cE "1/1[[:space:]]+Running")" -ge 1 ]; do sleep 3; done && kubectl port-forward -n $ns svc/{{ project-name }} {{ service_port }}:{{ service_port }} {{ management_port }}:{{ management_port }}',
+    serve_cmd='ns={{ organization-name }}-{{ project-name }}-dev; until [ "$(kubectl get pods -n $ns --no-headers 2>/dev/null | grep -cE "1/1[[:space:]]+Running")" -ge 1 ]; do sleep 3; done && kubectl port-forward -n $ns svc/{{ project-name }} {{ service_port }}:{{ service_port }} {{ management_port }}:{{ management_port }}',
     labels=['dev'],
 )

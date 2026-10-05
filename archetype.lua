@@ -25,11 +25,11 @@ context:page({ title = "Project", key = "project",
     identity.prompt_project(ctx)
 
     -- The deployment coordinates, grouped deliberately: this is exactly the set Ybor Studio
-    -- supplies per solution, so hiding them later is "this section came back empty" rather than a
-    -- re-grouping exercise.
+    -- supplies per organization, so hiding them later is "this section came back empty" rather
+    -- than a re-grouping exercise.
     ctx:section({ title = "Platform", key = "platform",
                   help = "Where this service deploys and publishes." }, function(ctx)
-        identity.prompt_solution(ctx)
+        identity.prompt_organization(ctx)
 
         -- The registry is asked here rather than by `platform.prompt()` below: the manifests
         -- library runs last (it needs the resource selections), which would put the registry dead
@@ -41,11 +41,11 @@ context:page({ title = "Project", key = "project",
         ctx:prompt_text("Go Module Path:", "module_path", {
             optional    = true,
             placeholder = "github.com/acme-payments/billing-service",
-            help        = "Go module path. Leave blank to use github.com/{solution}/{project}.",
+            help        = "Go module path. Leave blank to use github.com/{organization}/{project}.",
         })
         if ctx:get("module_path") == nil or ctx:get("module_path") == "" then
             ctx:set("module_path",
-                "github.com/" .. ctx:get("solution-name") .. "/" .. ctx:get("project-name"))
+                "github.com/" .. ctx:get("organization-name") .. "/" .. ctx:get("project-name"))
         end
     end)
 
